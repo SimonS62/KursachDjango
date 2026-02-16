@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object.pk %}Редактировать клиента{% else %}Создать клиента{% endif %}{% endblock %}
+
+{% block content %}
+    <h2>{% if object.pk %}Редактировать клиента{% else %}Создать нового клиента{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %} {# Обязательный токен для защиты от CSRF #}
+        {{ form.as_p }} {# Отображает форму как параграфы, можно использовать .as_table или .as_ul #}
+        <button type="submit">Сохранить</button>
+        <a href="{% url 'client_list' %}">Отмена</a>
+    </form>
+{% endblock %}

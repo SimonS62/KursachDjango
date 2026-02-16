@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Список сообщений{% endblock %}
+
+{% block content %}
+    <h2>Сообщения</h2>
+    <p><a href="{% url 'message_create' %}">Создать новое сообщение</a></p>
+
+    {% if messages %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Тема</th>
+                    <th>Тело сообщения</th>
+                    <th>Дата создания</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for message in messages %}
+                    <tr>
+                        <td>{{ message.subject }}</td>
+                        <td>{{ message.body|truncatewords:10 }}</td> {# Отображаем только первые 10 слов для краткости #}
+                        <td>{{ message.created_at }}</td>
+                        <td>
+                            <a href="{% url 'message_update' message.pk %}">Редактировать</a> |
+                            <a href="{% url 'message_delete' message.pk %}">Удалить</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Пока нет ни одного сообщения.</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object.pk %}Редактировать сообщение{% else %}Создать сообщение{% endif %}{% endblock %}
+
+{% block content %}
+    <h2>{% if object.pk %}Редактировать сообщение{% else %}Создать новое сообщение{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Сохранить</button>
+        <a href="{% url 'message_list' %}">Отмена</a>
+    </form>
+{% endblock %}
