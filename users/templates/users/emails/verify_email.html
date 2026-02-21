@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Подтверждение email</title>
+</head>
+<body>
+    <h2>Добро пожаловать, {{ user.username }}!</h2>
+    <p>Для подтверждения вашего email адреса перейдите по ссылке:</p>
+    <a href="{{ verification_url }}" style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Подтвердить email</a>
+    <p>Или скопируйте ссылку: {{ verification_url }}</p>
+    <p>Ссылка действительна 24 часа.</p>
+</body>
+</html>

@@ -1,0 +1,147 @@
+{% extends 'statistics/base.html' %}
+{% load static %}
+
+{% block statistics_title %}Моя статистика{% endblock %}
+
+{% block statistics_content %}
+<div class="row">
+    <!-- Общая информация -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Общая информация</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Текущий месяц</small>
+                    <h4>{{ today|date:"F Y" }}</h4>
+                </div>
+
+                {% if monthly_perf %}
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Завершено задач
+                        <span class="badge bg-primary rounded-pill">{{ monthly_perf.tasks_completed }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Процент выполнения
+                        <span class="badge bg-{% if monthly_perf.completion_rate > 80 %}success{% elif monthly_perf.completion_rate > 50 %}warning{% else %}danger{% endif %} rounded-pill">
+                            {{ monthly_perf.completion_rate|floatformat:1 }}%
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Выполнено вовремя
+                        <span class="badge bg-{% if monthly_perf.on_time_rate > 90 %}success{% elif monthly_perf.on_time_rate > 70 %}warning{% else %}danger{% endif %} rounded-pill">
+                            {{ monthly_perf.on_time_rate|floatformat:1 }}%
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Среднее время выполнения
+                        <span class="badge bg-info rounded-pill">{{ monthly_perf.avg_completion_time|floatformat:1 }} ч</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- График продуктивности -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Продуктивность по дням</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица ежедневной статистики -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Ежедневная статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Создано</th>
+                                <th>Завершено</th>
+                                <th>Затрачено времени</th>
+                                <th>Эффективность</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in daily_stats %}
+                            <tr>
+                                <td>{{ stat.date|date:"d.m.Y" }}</td>
+                                <td>{{ stat.tasks_created }}</td>
+                                <td>{{ stat.tasks_completed }}</td>
+                                <td>{{ stat.time_spent_minutes|divisibleby:60|yesno:" ,  " }}{{ stat.time_spent_minutes|divisibleby:60|yesno:stat.time_spent_minutes|add:"0"|divisibleby:60|yesno:stat.time_spent_minutes|add:"0"|divisibleby:60|yesno:"ч, мин" }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if stat.efficiency_rate > 0.8 %}bg-success{% elif stat.efficiency_rate > 0.5 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ stat.efficiency_rate|floatformat:2 }}%">
+                                            {{ stat.efficiency_rate|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">Нет данных за выбранный период</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block statistics_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // График ежедневной статистики
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+
+    fetch('/statistics/chart-data/?type=daily&user_id=me&days=7')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Задачи'
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Часы'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}

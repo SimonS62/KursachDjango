@@ -1,0 +1,175 @@
+{% extends 'statistics/base.html' %}
+{% load static %}
+
+{% block statistics_title %}Статистика и отчеты{% endblock %}
+
+{% block statistics_content %}
+<div class="row">
+    <!-- Общая статистика -->
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon text-primary">
+                    <i class="fas fa-tasks fa-2x"></i>
+                </div>
+                <h5 class="stat-value" id="total-tasks">0</h5>
+                <p class="stat-label">Всего задач</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon text-success">
+                    <i class="fas fa-check-circle fa-2x"></i>
+                </div>
+                <h5 class="stat-value" id="completed-tasks">0</h5>
+                <p class="stat-label">Выполнено</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon text-warning">
+                    <i class="fas fa-clock fa-2x"></i>
+                </div>
+                <h5 class="stat-value" id="in-progress-tasks">0</h5>
+                <p class="stat-label">В работе</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-icon text-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+                <h5 class="stat-value" id="overdue-tasks">0</h5>
+                <p class="stat-label">Просрочено</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Графики -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Динамика выполнения задач</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="tasksChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Статусы задач</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Производительность отделов</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="departmentChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Топ сотрудников</h5>
+            </div>
+            <div class="card-body">
+                <div class="top-users-list" id="top-users">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block statistics_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Загрузка данных дашборда
+    loadDashboardData();
+
+    // Инициализация графиков
+    initTasksChart();
+    initStatusChart();
+    initDepartmentChart();
+    loadTopUsers();
+
+    // Обновление при смене периода
+    document.getElementById('period-select').addEventListener('change', function() {
+        loadDashboardData();
+        loadTopUsers();
+    });
+});
+
+function loadDashboardData() {
+    const period = document.getElementById('period-select').value;
+
+    fetch(`/api/statistics/dashboard/?period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-tasks').textContent = data.total_tasks;
+            document.getElementById('completed-tasks').textContent = data.completed_tasks;
+            document.getElementById('in-progress-tasks').textContent = data.in_progress_tasks;
+            document.getElementById('overdue-tasks').textContent = data.overdue_tasks;
+        });
+}
+
+function loadTopUsers() {
+    const period = document.getElementById('period-select').value;
+
+    fetch(`/api/statistics/top-users/?period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('top-users');
+            container.innerHTML = '';
+
+            data.forEach((user, index) => {
+                const userElement = document.createElement('div');
+                userElement.className = 'top-user-item mb-2';
+                userElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-primary me-2">${index + 1}</span>
+                            <strong>${user.name}</strong>
+                        </div>
+                        <div>
+                            <span class="badge bg-success">${user.completion_rate}%</span>
+                            <small class="text-muted ms-2">${user.tasks_completed} задач</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(userElement);
+            });
+        });
+}
+</script>
+{% endblock %}

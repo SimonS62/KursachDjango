@@ -3,6 +3,7 @@ from django.core.mail import send_mail, BadHeaderError
 from django.utils import timezone
 from .models import Mailing, Client, MessageAttempt
 import logging
+from django.core.mail import send_mail
 
 
 logger = logging.getLogger(__name__)
@@ -90,3 +91,25 @@ def send_email_to_client(self, mailing_id, client_id):
         logger.error(f"[{task_id}] Непредвиденная ошибка в задаче: {e}")
         # Передаем исключение для Celery, чтобы он мог повторить задачу
         raise e
+
+import os
+from celery import Celery
+from celery.schedules import crontab
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+app = Celery('mailings')
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
+
+# Планировщик задач
+app.conf.beat_schedule = {
+    'send-scheduled-mailings': {
+        'task': 'mailings.tasks.send_scheduled_mailings',
+        'schedule': 60.0,  # Каждые 60 секунд
+    },
+    'check-mailing-status': {
+        'task': 'mailings.tasks.check_mailing_status',
+        'schedule': 300.0,  # Каждые 5 минут
+    },
+}
