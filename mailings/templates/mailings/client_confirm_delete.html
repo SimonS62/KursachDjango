@@ -1,0 +1,13 @@
+{% extends 'mailings/base.html' %}
+
+{% block title %}Удалить клиента{% endblock %}
+
+{% block content %}
+    <h2>Подтвердите удаление клиента</h2>
+    <p>Вы уверены, что хотите удалить клиента "{{ object.name }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Удалить</button>
+        <a href="{% url 'client_list' %}">Отмена</a>
+    </form>
+{% endblock %}

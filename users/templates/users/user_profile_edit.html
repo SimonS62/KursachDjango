@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %} {# Если вы используете crispy-forms #}
+
+{% block title %}Редактирование профиля{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Редактирование профиля</h1><form method="post" enctype="multipart/form-data"> {# enctype нужен для загрузки файлов (аватар) #}
+    {% csrf_token %}
+    {{ form|crispy }} {/* Используйте |crispy, если установлен crispy-forms */}
+    {# Или просто {{ form.as_p }} или {{ form.as_table }} #}
+
+    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+    <a href="{% url 'users:user_profile' pk=request.user.pk %}" class="btn btn-secondary">Отмена</a>
+</form>
+
+            </div>
+{% endblock %}

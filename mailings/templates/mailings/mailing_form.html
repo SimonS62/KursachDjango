@@ -1,0 +1,15 @@
+{% extends 'mailings/base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ page_title }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }} {# Отображает поля формы как параграфы. Можно менять на form.as_ul, form.as_table или стилизовать вручную #}
+        <button type="submit" class="btn btn-primary">{{ submit_button_text }}</button>
+        {# Кнопка "Отмена" со ссылкой на список рассылок #}
+        <a href="{% url 'mailings:mailing_list' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+{% endblock %}

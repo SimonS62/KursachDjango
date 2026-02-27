@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/statistics.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="statistics-container">
+    <div class="statistics-header">
+        <h1 class="statistics-title">{% block statistics_title %}{% endblock %}</h1>
+
+        <div class="statistics-controls">
+            <div class="period-selector">
+                <select id="period-select" class="form-select form-select-sm">
+                    <option value="week">За неделю</option>
+                    <option value="month" selected>За месяц</option>
+                    <option value="quarter">За квартал</option>
+                    <option value="year">За год</option>
+                </select>
+            </div>
+
+            <div class="export-buttons">
+                <button class="btn btn-outline-secondary btn-sm" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="statistics-content">
+        {% block statistics_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/statistics.js' %}"></script>
+{% block statistics_js %}{% endblock %}
+{% endblock %}

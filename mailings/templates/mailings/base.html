@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Система Рассылок{% endblock %}</title>
+    {% comment %} Здесь можно добавить ссылки на CSS/JS {% endcomment %}
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        nav { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;}
+        nav a { margin-right: 15px; text-decoration: none; color: blue; }
+        nav a:hover { text-decoration: underline; }
+        .content { margin-top: 20px; }
+        .messages { list-style: none; padding: 0; margin: 0 0 20px 0; }
+        .messages li { margin-bottom: 5px; padding: 8px; border: 1px solid #eee; }
+        .messages .message-info { border-color: #bce8f1; background-color: #d9edf7; color: #31708f; }
+        .messages .message-success { border-color: #d6e9c6; background-color: #dff0d8; color: #3c763d; }
+        .messages .message-warning { border-color: #faebcc; background-color: #fcf8e3; color: #8a6d3b; }
+        .messages .message-error { border-color: #ebccd1; background-color: #f2dede; color: #a94442; }
+        .error { color: red; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'home' %}">Главная</a>
+        <a href="{% url 'client_list' %}">Клиенты</a>
+        <a href="{% url 'message_list' %}">Сообщения</a>
+        <a href="{% url 'mailing_list' %}">Рассылки</a>
+        <a href="/admin/" target="_blank">Админка</a>
+    </nav>
+
+    {# Отображение сообщений Django #}
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="message-{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="content">
+        {% block content %}
+        <h1>Добро пожаловать!</h1>
+        <p>Используйте навигацию для управления разделами.</p>
+        {% endblock %}
+    </div>
+
+    <footer>
+        <p>© 2026 Система Рассылок</p>
+    </footer>
+</body>
+</html>

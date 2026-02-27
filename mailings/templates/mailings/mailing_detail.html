@@ -1,0 +1,19 @@
+{% extends 'mailings/base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ page_title }}</h1>
+    <h2>{{ mailing.subject }}</h2>
+    <p><strong>Текст:</strong> {{ mailing.text|linebreaks }}</p>
+    <p><strong>Запланировано:</strong> {{ mailing.scheduled_at }}</p>
+    {# Добавьте другие поля, которые вы хотите отобразить #}
+
+    <hr>
+    {# Кнопка "Назад" со ссылкой на список рассылок #}
+    <a href="{% url 'mailings:mailing_list' %}" class="btn btn-secondary">Назад к списку рассылок</a>
+
+    {# Если есть URL-ы для редактирования/удаления, добавьте ссылки #}
+    {# <a href="{% url 'mailings:mailing_edit' pk=mailing.pk %}" class="btn btn-warning">Редактировать</a> #}
+    {# <a href="{% url 'mailings:mailing_delete' pk=mailing.pk %}" class="btn btn-danger">Удалить</a> #}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'mailings/base.html' %}
+
+{% block title %}Список клиентов{% endblock %}
+
+{% block content %}
+    <h2>Клиенты</h2>
+    <p><a href="{% url 'client_create' %}">Добавить нового клиента</a></p>
+
+    {% if clients %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Телефон</th>
+                    <th>Часовой пояс</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                    <tr>
+                        <td>{{ client.name }}</td>
+                        <td>{{ client.email }}</td>
+                        <td>{{ client.phone_number }}</td>
+                        <td>{{ client.timezone }}</td>
+                        <td>
+                            <a href="{% url 'client_update' client.pk %}">Редактировать</a> |
+                            <a href="{% url 'client_delete' client.pk %}">Удалить</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Пока нет ни одного клиента.</p>
+    {% endif %}
+{% endblock %}

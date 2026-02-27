@@ -1,0 +1,26 @@
+{% extends 'mailings/base.html' %} {# Используйте ваш базовый шаблон #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ page_title }}</h1>
+
+    {# Ссылка на создание новой рассылки #}
+    <a href="{% url 'mailings:mailing_create' %}" class="btn btn-primary mb-3">Создать новую рассылку</a>
+
+    {% if mailings %}
+        <ul class="list-group">
+            {% for mailing in mailings %}
+                <li class="list-group-item">
+                    {# Ссылка на детали конкретной рассылки #}
+                    <a href="{% url 'mailings:mailing_detail' pk=mailing.pk %}">
+                        <strong>{{ mailing.subject }}</strong>
+                    </a>
+                    - Запланировано: {{ mailing.scheduled_at }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Пока нет созданных рассылок.</p>
+    {% endif %}
+{% endblock %}
