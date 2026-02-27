@@ -22,4 +22,10 @@ urlpatterns = [
     # Сброс пароля
     path('password-reset/', PasswordResetView.as_view(), name='password-reset'),
     path('password-reset/confirm/<uuid:token>/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
+
+
+    # URL-ы для профиля пользователя
+    path('profile/<int:pk>/', views.UserProfileView.as_view(), name='user_profile'), # Пример профиля
+    path('profile/edit/', views.UserProfileEditView.as_view(), name='user_profile_edit'), # Пример редактирования профиля
+
 ]

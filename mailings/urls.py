@@ -1,13 +1,12 @@
-from django.urls import path, include
-from .views import MailingViewSet # Предполагаемый ViewSet
-from rest_framework.routers import DefaultRouter
+from django.urls import path
+from . import views
 
 
-router = DefaultRouter()
-router.register(r'mailings', MailingViewSet) # Пример регистрации ViewSet
+app_name = 'mailings'
 
 urlpatterns = [
-    # Подключаем URL'ы, сгенерированные роутером
-    path('', include(router.urls)),
-    # path('another_mailing_url/', views.some_other_view, name='other_view'),
+    # URL-адреса для предствлений рассылок
+    path('mailings/', views.mailing_list, name='mailing_list'),       # /mail/mailings/
+    path('mailings/<int:pk>/', views.mailing_detail, name='mailing_detail'), # /mail/mailings/1/
+    path('mailings/create/', views.MailingCreateView.as_view(), name='mailing_create'), # /mail/mailings/create/
 ]

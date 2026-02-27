@@ -1,13 +1,15 @@
-{% extends 'base.html' %}
+{% extends 'mailings/base.html' %}
 
-{% block title %}{% if object.pk %}Редактировать рассылку{% else %}Создать рассылку{% endif %}{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-    <h2>{% if object.pk %}Редактировать рассылку{% else %}Создать новую рассылку{% endif %}</h2>
+    <h1>{{ page_title }}</h1>
+
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Сохранить</button>
-        <a href="{% url 'mailing_list' %}">Отмена</a>
+        {{ form.as_p }} {# Отображает поля формы как параграфы. Можно менять на form.as_ul, form.as_table или стилизовать вручную #}
+        <button type="submit" class="btn btn-primary">{{ submit_button_text }}</button>
+        {# Кнопка "Отмена" со ссылкой на список рассылок #}
+        <a href="{% url 'mailings:mailing_list' %}" class="btn btn-secondary">Отмена</a>
     </form>
 {% endblock %}

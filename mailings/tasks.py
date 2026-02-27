@@ -1,61 +1,110 @@
-from celery import shared_task
+import time
 from django.core.mail import send_mail, BadHeaderError
 from django.utils import timezone
+from django.conf import settings
+from celery import shared_task
 from .models import Mailing, Client, MessageAttempt
 import logging
-from django.core.mail import send_mail
 
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, max_retries=5, default_retry_delay=60) # max_retries - кол-во повторов, default_retry_delay - задержка в сек.
+@shared_task(
+    bind=True,
+    max_retries=5,
+    default_retry_delay=60, # задержка в секундах
+    autoretry_for=(Exception,), # Автоматически повторять при определенных исключениях
+    retry_kwargs={'exc': None} # Дополнительные аргументы для retry
+)
 def send_email_to_client(self, mailing_id, client_id):
     """
     Асинхронная задача для отправки письма конкретному клиенту.
     """
-    task_id = self.request.id # Получаем ID задачи Celery
+    # Получаем ID задачи Celery для логгирования
+    task_id = self.request.id
     logger.info(f"[{task_id}] Запуск задачи для рассылки {mailing_id}, клиента {client_id}")
 
     try:
         # --- Получаем объекты ---
+        # Использование .get() безопасно, так как они уже в блоке try/except
         mailing = Mailing.objects.get(id=mailing_id)
         client = Client.objects.get(id=client_id)
 
-        # --- Проверка времени (даже если задача была поставлена, время могло измениться) ---
+        # --- Проверка времени ---
         now = timezone.now()
+        # Проверяем, что рассылка активна СЕЙЧАС
         if not (mailing.start_time <= now <= mailing.end_time):
-            logger.warning(f"[{task_id}] ⏰ Время для рассылки {mailing.id} истекло или еще не началось. Задача отменена.")
-            # Не создаем attempt, так как это не ошибка отправки, а изменение условий
-            return False # Задача завершена, но без результата
+            logger.warning(
+                f"[{task_id}] ⏰ Время для рассылки {mailing.id} истекло "
+                f"({mailing.start_time} - {mailing.end_time}). Текущее: {now}. Задача отменена."
+            )
+            # Задача не должна повторяться, если время не подошло. Return False = задача выполнена, без повтора.
+            # Не создаем MessageAttempt, так как это не ошибка отправки.
+            return False
 
         # --- Отправка письма ---
         try:
-            send_start_time = time.time() # Замер времени отправки
+            # Используем time.time() для замера длительности
+            send_start_time = time.time()
+
+            # Убедитесь, что в Mailing есть поле message, и в нем есть subject и body.
+            # Подразумевается, что Message - это отдельная модель, связанная с Mailing ForeignKey.
+            # Если это не так, скорректируйте пути к subject и body.
+            # --- !!! УБЕДИТЕСЬ, ЧТО ИМПОРТИРОВАНЫ ПОЛЯ И МОДЕЛЬ MESSAGE !!! ---
+            # Если Message - это ваша модель, то:
+            # ```python
+            # from .models import Mailing, Client, MessageAttempt, Message
+            # ```
+            # И в Mailing модели:
+            # ```python
+            # message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='mailings')
+            # ```
+            # Если `subject` и `body` находятся непосредственно в `Mailing`, то используйте:
+            # subject=mailing.subject, body=mailing.body
+
             sent_count = send_mail(
-                subject=mailing.message.subject,
-                message=mailing.message.body,
-                from_email=settings.DEFAULT_FROM_EMAIL, # Используем настройку из settings.py
+                subject=mailing.message.subject, # Пример
+                message=mailing.message.body,    # Пример
+                from_email=settings.DEFAULT_FROM_EMAIL, # !!! settings импортирован !!!
                 recipient_list=[client.email],
-                fail_silently=False, # Важно: если False, то при ошибке будет выброшено исключение
+                fail_silently=False, # Важно: выбросит исключение при ошибке
             )
             send_duration_ms = int((time.time() - send_start_time) * 1000)
 
             # --- Обработка результата ---
-            if sent_count == 1: # send_mail возвращает количество успешно отправленных адресов
-                logger.info(f"[{task_id}] ✅ Письмо успешно отправлено на {client.email} (длительность: {send_duration_ms} мс).")
+            if sent_count == 1:
+                logger.info(
+                    f"[{task_id}] ✅ Письмо успешно отправлено на {client.email} "
+                    f"(длительность: {send_duration_ms} мс)."
+                )
+                # Создаем запись о попытке отправки
                 MessageAttempt.objects.create(
                     mailing=mailing,
                     client=client,
                     status='success',
-                    server_response='Письмо успешно отправлено.', # Здесь может быть ответ сервера, если send_mail его вернет
+                    # server_response - здесь может быть что-то более конкретное,
+                    # если send_mail позволит это получить. Чаще всего нет.
+                    server_response=f'Отправлено за {send_duration_ms} мс.',
                     # attempt_time устанавливается автоматически через auto_now_add=True
                 )
-                return True
+                return True # Задача успешно выполнена
             else:
-                # Если sent_count == 0, а fail_silently=False, это странно, но обработаем
-                raise Exception("send_mail вернул 0, но не вызвал исключение.")
+                # Это сценарий, когда send_mail не выбросил исключение (fail_silently=False),
+                # но и не вернул 1 (т.е. не отправил 1 письмо).
+                # Это редкая, но возможная ситуация.
+                error_msg = "send_mail вернул 0, но не вызвал исключение."
+                logger.error(f"[{task_id}] ❌ {error_msg} (Клиент: {client.email})")
+                MessageAttempt.objects.create(
+                    mailing=mailing,
+                    client=client,
+                    status='failed',
+                    server_response=error_msg,
+                )
+                # Не повторяем задачу при таком странном поведении, чтобы не зациклить.
+                return False
 
         except BadHeaderError as e:
+            # Явное исключение для некорректных заголовков
             error_msg = f"Ошибка в заголовках письма: {e}"
             logger.error(f"[{task_id}] ❌ {error_msg} (Клиент: {client.email})")
             MessageAttempt.objects.create(
@@ -63,53 +112,35 @@ def send_email_to_client(self, mailing_id, client_id):
                 client=client,
                 status='failed',
                 server_response=error_msg,
-                # attempt_time устанавливается автоматически
             )
-            # Не повторяем задачу при BadHeaderError, т.к. она скорее всего связана с некорректными данными
+            # Не повторяем задачу при BadHeaderError. Проблема в данных рассылки.
             return False
+
         except Exception as e:
+            # Ловим все остальные исключения при отправке письма
             error_msg = f"Ошибка при отправке письма: {e}"
             logger.error(f"[{task_id}] ❌ {error_msg} (Клиент: {client.email})")
 
+            # Создаем запись о неудачной попытке
             MessageAttempt.objects.create(
                 mailing=mailing,
                 client=client,
                 status='failed',
                 server_response=str(e), # Сохраняем текст ошибки
-                # attempt_time устанавливается автоматически
             )
-            # Передаем исключение дальше, чтобы Celery знал о неудаче и мог повторить
+            # !!! Важно !!! Передаем исключение дальше.
+            # Celery увидит это исключение и, согласно `@shared_task` декоратору,
+            # попытается повторить задачу (согласно max_retries и default_retry_delay).
             raise e
 
     except Mailing.DoesNotExist:
         logger.error(f"[{task_id}] Рассылка с ID {mailing_id} не найдена. Задача отменена.")
-        return False
+        return False # Задача выполнена, но с причиной отмены. Не повторять.
     except Client.DoesNotExist:
         logger.error(f"[{task_id}] Клиент с ID {client_id} не найден. Задача отменена.")
-        return False
-    except Exception as e: # Ловим любые другие неожиданные ошибки
-        logger.error(f"[{task_id}] Непредвиденная ошибка в задаче: {e}")
-        # Передаем исключение для Celery, чтобы он мог повторить задачу
-        raise e
-
-import os
-from celery import Celery
-from celery.schedules import crontab
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-
-app = Celery('mailings')
-app.config_from_object('django.conf:settings', namespace='CELERY')
-app.autodiscover_tasks()
-
-# Планировщик задач
-app.conf.beat_schedule = {
-    'send-scheduled-mailings': {
-        'task': 'mailings.tasks.send_scheduled_mailings',
-        'schedule': 60.0,  # Каждые 60 секунд
-    },
-    'check-mailing-status': {
-        'task': 'mailings.tasks.check_mailing_status',
-        'schedule': 300.0,  # Каждые 5 минут
-    },
-}
+        return False # Задача выполнена, но с причиной отмены. Не повторять.
+    except Exception as e:
+        # Ловим любые другие неожиданные ошибки (например, проблемы с моделями)
+        # Важно, чтобы задача также повторилась
+        logger.error(f"[{task_id}] !!! Непредвиденная ошибка в задаче: {e}")
+        raise e # Передаем исключение, чтобы Celery мог повторить

@@ -1,16 +1,175 @@
 [project]
 name = "kursachdjango"
 version = "0.1.0"
-description = ""
+description = "Проект Django для курсовой работы" # Добавил описание
 authors = [
     {name = "Simon",email = "rsemenistov@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13" # Убедитесь, что все зависимости совместимы с Python 3.13
+
+# === ОСНОВНЫЕ ЗАВИСИМОСТИ ===
 dependencies = [
+    # --- Django ---
+    "Django>=4.2,<5.0",
+
+    # --- Django REST Framework ---
+    "djangorestframework>=3.14",
+    "django-filter>=23.3",
+
+    # --- Celery & Асинхронные задачи ---
+    "celery>=5.3",
+    "redis",
+    "django-celery-beat>=2.5",
+    "django-celery-results>=2.5",
+
+    # --- Базы данных ---
+    # По умолчанию Django использует SQLite, но для серьезных проектов лучше PostgreSQL.
+    # Если вы используете SQLite, этот пакет не нужен.
+    # Если PostgreSQL, раскомментируйте:
+    "psycopg2-binary>=2.9",
+    "dj-database-url>=2.0",
+
+    # --- Пользователи и аутентификация ---
+    "django-allauth>=0.54",
+
+    # --- Админка и формы ---
+    "django-crispy-forms>=2.0",
+    "crispy-bootstrap5>=0.7",
+
+    # --- Утилиты и вспомогательные библиотеки ---
+    "python-dotenv>=1.0",
+    "Pillow>=10.0",
+    "python-dateutil>=2.8",
+    "pytz>=2023.3",
+    "requests>=2.31",
+
+    # --- Развертывание (Production) ---
+    # gunicorn и whitenoise вам скорее всего понадобятся для деплоя,
+    # но в локальной среде они не требуются для запуска.
+    # Можно их добавить сюда или в раздел dev-зависимостей, если планируете тесты на них.
+    # "gunicorn>=21.2",
+    # "whitenoise>=6.5",
 ]
 
+# === ДОПОЛНИТЕЛЬНЫЕ ЗАВИСИМОСТИ (для специфических задач) ===
+[project.optional-dependencies]
+# Зависимости для разработки (тестирование, линтинг, форматирование)
+dev = [
+    "pytest>=7.4",
+    "pytest-django>=4.7",
+    "factory-boy>=3.3",
+    "coverage>=7.3",
+    "black>=23.9",
+    "flake8>=6.1",
+    "isort>=5.12",
+    "pre-commit>=3.5",
+    "django-debug-toolbar>=4.1", # Панель отладки Django
+    "django-extensions>=3.2",    # Дополнительные команды Django
+]
 
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+# Зависимости для документации
+docs = [
+    "sphinx>=7.2",
+    "sphinx-rtd-theme>=1.3",
+]
+
+# === КОНФИГУРАЦИЯ ИНСТРУМЕНТОВ (для Poetry) ===
+
+[tool.poetry]
+name = "kursachdjango"
+version = "0.1.0"
+description = "Проект Django для курсовой работы"
+authors = ["Simon <rsemenistov@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.13" # Poetry автоматически управляет этим
+
+# Основные зависимости (повторяем здесь для poetry)
+Django = ">=4.2,<5.0"
+djangorestframework = ">=3.14"
+django-filter = ">=23.3"
+celery = ">=5.3"
+redis = "^5.3.0" # Poetry предпочитает ^ для точных версий
+django-celery-beat = ">=2.5,<3.0"
+django-celery-results = ">=2.5,<3.0"
+# psycopg2-binary = ">=2.9" # Uncomment if using PostgreSQL
+dj_database_url = ">=2.0" # Poetry предпочитает snake_case для имен пакетов
+django_allauth = ">=0.54"
+django_crispy_forms = ">=2.0"
+crispy_bootstrap5 = ">=0.7"
+python_dotenv = ">=1.0" # Poetry предпочитает snake_case
+Pillow = ">=10.0"
+python_dateutil = ">=2.8"
+pytz = ">=2023.3"
+requests = ">=2.31"
+
+# gunicorn = ">=21.2" # Production dependency, consider adding to dev or specific group
+# whitenoise = ">=6.5" # Production dependency
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.4"
+pytest_django = ">=4.7" # Poetry предпочитает snake_case
+factory_boy = ">=3.3"   # Poetry предпочитает snake_case
+coverage = ">=7.3"
+black = ">=23.9"
+flake8 = ">=6.1"
+isort = ">=5.12"
+pre-commit = ">=3.5"
+django_debug_toolbar = ">=4.1" # Poetry предпочитает snake_case
+django_extensions = ">=3.2"    # Poetry предпочитает snake_case
+
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=7.2"
+sphinx_rtd_theme = ">=1.3" # Poetry предпочитает snake_case
+
+# === КОНФИГУРАЦИЯ ИНСТРУМЕНТОВ (для Poetry) ===
+
+[tool.black]
+line-length = 88
+target-version = ['py313'] # Обновлено до 3.13
+exclude = '''
+/(
+  \.git
+  | \.venv
+  | _build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "kursachdjango.settings"
+python_files = ["tests.py", "test_*.py"]
+addopts = "--reuse-db --cov=kursachdjango --cov=mailing_project"
+
+[tool.coverage.run]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "manage.py",
+    "wsgi.py",
+    "asgi.py",
+    "**/__init__.py", # Исключаем __init__ файлы
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __str__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "except ImportError",
+    "raise NotImplementedError",
+    "pass",
+    "if __name__ == '__main__'",
+]
+
+[tool.django-extensions]
+SHELL_PLUS = "ipython"

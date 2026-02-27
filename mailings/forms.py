@@ -17,6 +17,8 @@ class MessageForm(forms.ModelForm):
 class MailingForm(forms.ModelForm):
     class Meta:
         model = Mailing
-        # Для рассылки мы хотим выбрать клиентов и сообщения.
-        # Предполагается, что у вас есть соответствующие поля в модели Mailing.
-        fields = ['name', 'clients', 'message', 'schedule_time', 'is_active']
+        fields = ['subject', 'text', 'scheduled_at', 'clients'] # Укажите актуальные поля вашей модели Mailing
+        widgets = {
+            'scheduled_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'clients': forms.CheckboxSelectMultiple(), # Пример для ManyToManyField
+        }
